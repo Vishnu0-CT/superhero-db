@@ -33,7 +33,6 @@ public class SqsService {
 
     public void sendJsonMessage(String queueUrl, Object data) {
         try {
-            // Convert the object (Map, List, etc.) to JSON string
             String jsonPayload = objectMapper.writeValueAsString(data);
 
             SendMessageRequest request = SendMessageRequest.builder()
@@ -60,12 +59,11 @@ public class SqsService {
         List<Message> messages = response.messages();
 
         if (messages.isEmpty()) {
-            System.out.println("No messages received.");
             return null;
         }
 
         Message message = messages.get(0);
-        System.out.println("Received message: " + message.body());
+        System.out.println("Received message from SQS: " + message.body());
 
         try {
             // Deserialize JSON into a Map<String, Object>
@@ -90,6 +88,6 @@ public class SqsService {
                 .build();
         sqsClient.deleteMessage(deleteRequest);
 
-        System.out.println("Deleted message with receipt handle: " + receiptHandle);
+        System.out.println("Deleted message: " + receiptHandle);
     }
 }

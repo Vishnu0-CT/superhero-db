@@ -68,7 +68,7 @@ public class SuperheroController {
             throw new RuntimeException("No superheroes with that name");
         }
         // Log or process payload as needed
-        System.out.println("Received payload: " + payload);
+        System.out.println("Received payload from Postman: " + payload);
 
         // Push the payload to SQS
         sqsService.sendJsonMessage(queueUrl, payload);
@@ -76,15 +76,17 @@ public class SuperheroController {
         return "Message accepted and pushed to SQS.";
     }
 
-    @GetMapping("/consume")
-    public Object popFromQueue() {
-        Map<String, Object> returnRaw = sqsService.receiveAndDeleteMessage(queueUrl);
-        Superhero updateData = new Superhero();
-        updateData.setName(returnRaw.get("name").toString());
-        updateData.setPower(returnRaw.get("power").toString());
-        updateData.setUniverse(returnRaw.get("universe").toString());
-        superheroRepository.save(updateData);
-        return "Superhero updated";
-    }
+//    @GetMapping("/consume")
+//    public Object popFromQueue() {
+//        Map<String, Object> returnRaw = sqsService.receiveAndDeleteMessage(queueUrl);
+//
+//        Superhero superheroToEdit = superheroRepository.findAllByName(returnRaw.get("name").toString()).get(0);
+//
+//        superheroToEdit.setName(returnRaw.get("name").toString());
+//        superheroToEdit.setPower(returnRaw.get("power").toString());
+//        superheroToEdit.setUniverse(returnRaw.get("universe").toString());
+//        superheroRepository.save(superheroToEdit);
+//        return "Superhero updated";
+//    }
 
 }
