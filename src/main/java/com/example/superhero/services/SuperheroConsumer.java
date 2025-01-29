@@ -2,58 +2,30 @@ package com.example.superhero.services;
 
 import com.example.superhero.dto.Superhero;
 import com.example.superhero.repositories.SuperheroRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.scheduling.annotation.Scheduled;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.awspring.cloud.sqs.annotation.SqsListener;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
-import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
-import java.sql.SQLOutput;
 import java.util.List;
 import java.util.Map;
 
 @Service
-public class SuperheroConsumer implements CommandLineRunner {
-    private SuperheroRepository superheroRepository;
+public class SuperheroConsumer {
+    private final SuperheroRepository superheroRepository;
+    private final ObjectMapper objectMapper;
 
-    private SqsService sqsService;
-
-    public SuperheroConsumer(SqsService sqsService,
-                             SuperheroRepository superheroRepository) {
-        this.sqsService = sqsService;
+    public SuperheroConsumer(SuperheroRepository superheroRepository) {
         this.superheroRepository = superheroRepository;
+        this.objectMapper = new ObjectMapper();
     }
 
-    @Value("${app.sqs.queueUrl}")
-    private String queueUrl;
+    @SqsListener(value = "${app.sqs.queueUrl}")
+    public void receiveMessage(String message) throws JsonProcessingException {
+            System.out.println("Received message from SQS: " + message);
+            Map<String, Object> payload = objectMapper.readValue(message, Map.class);
+            updateSuperheroInDb(payload);
 
-    private void consumeAndUpdate() {
-        Map<String, Object> returnRaw = sqsService.receiveAndDeleteMessage(queueUrl);
-
-        Superhero superheroToEdit = superheroRepository.findAllByName(returnRaw.get("name").toString()).get(0);
-
-        superheroToEdit.setName(returnRaw.get("name").toString());
-        superheroToEdit.setPower(returnRaw.get("power").toString());
-        superheroToEdit.setUniverse(returnRaw.get("universe").toString());
-        superheroRepository.save(superheroToEdit);
-    }
-
-    @Override
-    public void run(String... args) throws InterruptedException {
-        while (true) {
-            Map<String, Object> messagePayload = sqsService.receiveAndDeleteMessage(queueUrl);
-
-            if (messagePayload != null) {
-                updateSuperheroInDb(messagePayload);
-            } else {
-                Thread.sleep(1000);
-            }
-        }
     }
 
     private void updateSuperheroInDb(Map<String, Object> payload) {
@@ -70,9 +42,7 @@ public class SuperheroConsumer implements CommandLineRunner {
         hero.setName(name);
         hero.setPower(power);
         hero.setUniverse(universe);
-
         superheroRepository.save(hero);
-
         System.out.println("Updated superhero in mongo: " + hero);
     }
 }

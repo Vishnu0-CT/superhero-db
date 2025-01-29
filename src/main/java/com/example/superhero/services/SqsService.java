@@ -90,4 +90,15 @@ public class SqsService {
 
         System.out.println("Deleted message: " + receiptHandle);
     }
+
+    public Map<String, Object> convertMessageToMap(String message) {
+        try {
+            return objectMapper.readValue(
+                    message,
+                    new TypeReference<Map<String, Object>>() {}
+            );
+        } catch (IOException e) {
+            throw new RuntimeException("Error deserializing JSON to Map<String, Object>", e);
+        }
+    }
 }
